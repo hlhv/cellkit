@@ -15,7 +15,7 @@ package main
 
 import (
         "github.com/hlhv/protocol"
-        "github.com/hlhv/testcell/client"
+        "github.com/hlhv/cellkit/client"
 )
 
 func main () {
