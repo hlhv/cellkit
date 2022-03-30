@@ -23,6 +23,7 @@ import (
 type Leash struct {
         queue   chan Req
         uuid    string
+        key     string
         conn    net.Conn
         reader  *fsock.Reader
         writer  *fsock.Writer
@@ -66,13 +67,16 @@ func NewLeash () (leash *Leash) {
  * does not return.
  */
 func (leash *Leash) Ensure (
-        address string,
-        mounts []Mount,
+        address      string,
+        mounts       []Mount,
+        key          string,
         rootCertPath string,
 ) {
         var retryTime time.Duration = 3
         for {
-                worked, err := leash.ensureOnce(address, mounts, rootCertPath)
+                worked, err := leash.ensureOnce (
+                        address, mounts,
+                        key, rootCertPath)
                 if err != nil { log.Println("connection error:", err) }
                 if worked {
                         retryTime = 2
@@ -88,12 +92,13 @@ func (leash *Leash) Ensure (
 func (leash *Leash) ensureOnce (
         address      string,
         mounts       []Mount,
+        key          string,
         rootCertPath string,
 ) (
         worked bool,
         err error,
 ) {
-        err = leash.Dial(address, rootCertPath)
+        err = leash.Dial(address, key, rootCertPath)
         if err != nil { return false, err }
 
         for _, mount := range(mounts) {
@@ -108,7 +113,13 @@ func (leash *Leash) ensureOnce (
 /* Dial connects the leash to a server. This function is only useful in some
  * cases, Ensure is usually a better option.
  */
-func (leash *Leash) Dial (address string, rootCertPath string) (err error) {
+func (leash *Leash) Dial (
+        address      string,
+        key          string,
+        rootCertPath string,
+) (
+        err error,
+) {
         if leash.conn != nil {
                 // we already have a connection, so close it
                 leash.Close()
@@ -149,8 +160,15 @@ func (leash *Leash) Dial (address string, rootCertPath string) (err error) {
         leash.writer = fsock.NewWriter(leash.conn)
 
         log.Println("requesting cell status")
+        // hangs?
         _, err = leash.writeMarshalFrame (&protocol.FrameIAm {
                 ConnKind: protocol.ConnKindCell,
+        })
+        if err != nil { return err }
+
+        log.Println("sending key")
+        _, err = leash.writeMarshalFrame (&protocol.FrameKey {
+                Key: key,
         })
         if err != nil { return err }
 
@@ -167,6 +185,7 @@ func (leash *Leash) Dial (address string, rootCertPath string) (err error) {
         if err != nil { return err }
 
         leash.uuid = frame.Uuid
+        leash.key  = frame.Key
         log.Println("accepted, uuid is", leash.uuid)
 
         go leash.respond()
@@ -217,6 +236,7 @@ func (leash *Leash) NewBand () (err error) {
         band, err := spawnBand (
                 leash.conn.RemoteAddr().String(),
                 leash.uuid,
+                leash.key,
                 leash.handleBandFrame,
                 leash.tlsConf,
         )

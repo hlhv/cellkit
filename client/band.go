@@ -23,6 +23,7 @@ type Band struct {
 func spawnBand (
         address string,
         uuid string,
+        key string,
         callback func(*Band, protocol.FrameKind, []byte),
         tlsConf *tls.Config,
 ) (
@@ -44,6 +45,12 @@ func spawnBand (
                 Uuid:     uuid,
         })
         if err != nil { conn.Close(); return nil, err }
+
+        log.Println("sending key")
+        _, err = protocol.WriteMarshalFrame (writer, &protocol.FrameKey {
+                Key: key,
+        })
+        if err != nil { return nil, err }
 
         kind, data, err := protocol.ReadParseFrame(reader)
         if err != nil { conn.Close(); return nil, err }

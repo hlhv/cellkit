@@ -3,3 +3,5 @@ github.com/hlhv/fsock v0.0.0-20220320042454-babab2fed524 h1:5UNBqsBznALoDDhcxfTV
 github.com/hlhv/fsock v0.0.0-20220320042454-babab2fed524/go.mod h1:JZLxqhthbuj6yK9VpKT3Qx3hmhs8ofcEew/yP8E6OoQ=
 github.com/hlhv/protocol v0.0.0-20220323055047-685d7735773a h1:SjeKZevsIKu/NQw4dKUiAJBllCOP+FVHKjXaxalc4NE=
 github.com/hlhv/protocol v0.0.0-20220323055047-685d7735773a/go.mod h1:coT2nFBDjAgv3vw5DsLy1lFen2e+CQUsacURJJjdnr0=
+github.com/hlhv/protocol v0.0.0-20220330070737-274ee87d6aa3 h1:uisbpSg+QVJXTMk08IbVXL6cR3uY/oGOPpfOTCcjxJ4=
+github.com/hlhv/protocol v0.0.0-20220330070737-274ee87d6aa3/go.mod h1:coT2nFBDjAgv3vw5DsLy1lFen2e+CQUsacURJJjdnr0=
