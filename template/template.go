@@ -33,7 +33,7 @@ func New (templateString string) (template *Template) {
 
         skip := false
         for _, ch := range(templateString) {
-                if skip { item.value += string(ch) }
+                if skip { item.value += string(ch); skip = false }
 
                 if item.replaceMe {
                         if ch == '}' {
