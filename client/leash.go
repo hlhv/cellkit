@@ -2,7 +2,6 @@ package client
 
 import (
         "io"
-        "log"
         "net"
         "fmt"
         "time"
@@ -13,6 +12,7 @@ import (
         "encoding/json"
         "container/list"
         "github.com/hlhv/fsock"
+        "github.com/hlhv/scribe"
         "github.com/hlhv/protocol"
 )
 
@@ -77,14 +77,19 @@ func (leash *Leash) Ensure (
                 worked, err := leash.ensureOnce (
                         address, mounts,
                         key, rootCertPath)
-                if err != nil { log.Println("connection error:", err) }
+                if err != nil {
+                        scribe.PrintError (
+                                scribe.LogLevelError, "connection error:", err)
+                }
                 if worked {
                         retryTime = 2
                 } else if retryTime < 60 {
                         retryTime = (retryTime * 3) / 2
                 }
                 
-                log.Println("disconnected. retrying in", retryTime)
+                scribe.PrintInfo (
+                        scribe.LogLevelNormal,
+                        "disconnected. retrying in", retryTime)
                 time.Sleep(retryTime * time.Second)
         }
 }
@@ -105,7 +110,7 @@ func (leash *Leash) ensureOnce (
                 err = leash.Mount(mount.Host, mount.Path)
                 if err != nil { return true, err }
         }
-        log.Println("mounted")
+        scribe.PrintDone(scribe.LogLevelNormal, "mounted")
 
         return true, leash.Listen()
 }
@@ -125,10 +130,10 @@ func (leash *Leash) Dial (
                 leash.Close()
         }
 
-        log.Println("connecting new leash")
+        scribe.PrintProgress(scribe.LogLevelNormal, "connecting new leash")
 
         if rootCertPath != "" {
-                log.Println("reading root cert")
+                scribe.PrintProgress(scribe.LogLevelDebug, "reading root cert")
 
                 rootPEM, err := ioutil.ReadFile(rootCertPath)
                 if err != nil { return err }
@@ -141,32 +146,33 @@ func (leash *Leash) Dial (
                         RootCAs: roots,
                 }                
         } else {
-                log.Println("WARNING!")
-                log.Println("CONTINUING WITHOUT TLS AUTHENTICATION.")
-                log.Println("THIS SHOULD ONLY BE USED FOR TESTING.")
-                log.Println("DOING THIS IN A PRODUCTION ENVIRONMENT")
-                log.Println("COULD LEAVE YOUR SYSTEM OPEN TO ATTACK.")
+                scribe.PrintWarning (
+                        scribe.LogLevelError,
+                        "WARNING!\nCONTINUING WITHOUT TLS AUTHENTICATION.\n" +
+                        "THIS SHOULD ONLY BE USED FOR TESTING. DOING THIS\n" +
+                        "IN A PRODUCTION ENVIRONMENT COULD LEAVE YOUR\n" +
+                        "SYSTEM OPEN TO ATTACK.")
                 leash.tlsConf = &tls.Config {
                         InsecureSkipVerify: true,
                 }
         }
 
-        log.Println("dialing")
+        scribe.PrintProgress(scribe.LogLevelNormal, "dialing")
         conn, err := tls.Dial("tcp", address, leash.tlsConf)
         if err != nil { return err }
-
+        
         leash.conn   = conn
         leash.reader = fsock.NewReader(leash.conn)
         leash.writer = fsock.NewWriter(leash.conn)
 
-        log.Println("requesting cell status")
+        scribe.PrintProgress(scribe.LogLevelDebug, "requesting cell status")
         // hangs?
         _, err = leash.writeMarshalFrame (&protocol.FrameIAm {
                 ConnKind: protocol.ConnKindCell,
         })
         if err != nil { return err }
 
-        log.Println("sending key")
+        scribe.PrintProgress(scribe.LogLevelDebug, "sending key")
         _, err = leash.writeMarshalFrame (&protocol.FrameKey {
                 Key: key,
         })
@@ -186,7 +192,8 @@ func (leash *Leash) Dial (
 
         leash.uuid = frame.Uuid
         leash.key  = frame.Key
-        log.Println("accepted, uuid is", leash.uuid)
+        scribe.PrintDone (
+                scribe.LogLevelNormal, "leash accepted, uuid is", leash.uuid)
 
         go leash.respond()
         return nil
@@ -253,14 +260,19 @@ func (leash *Leash) Listen () (err error) {
                 var kind protocol.FrameKind
                 var data []byte
                 kind, data, err = protocol.ReadParseFrame(leash.reader)
-                log.Println("got something")
+                scribe.PrintRequest (
+                        scribe.LogLevelDebug, "received command over leash")
                 
                 if err == io.EOF { break }
-                if err != nil { log.Print("leash error:", err) }
+                if err != nil {
+                        scribe.PrintError (
+                                scribe.LogLevelError, "leash error:", err)
+                }
                 
                 leash.handleFrame(kind, data)
         }
-        log.Println("disconnected")
+        scribe.PrintDisconnect (
+                scribe.LogLevelNormal, "disconnected")
         return err
 }
 
@@ -269,9 +281,12 @@ func (leash *Leash) Listen () (err error) {
 func (leash *Leash) handleFrame (kind protocol.FrameKind, data []byte) {
         switch kind {
         case protocol.FrameKindNeedBand:
-                log.Println("server needs new band")
+                scribe.PrintInfo(scribe.LogLevelDebug, "server needs new band")
                 err := leash.NewBand()
-                if err != nil { log.Print("cant add band:", err) }
+                if err != nil {
+                        scribe.PrintError (
+                                scribe.LogLevelError, "cant add band:", err)
+                }
                 break
         }
 }
@@ -285,7 +300,8 @@ func (leash *Leash) handleBandFrame (
 ) {
         switch kind {
         case protocol.FrameKindHTTPReqHead:
-                log.Println("incoming http request")
+                scribe.PrintRequest (
+                        scribe.LogLevelNormal, "incoming http request")
                 frame := &protocol.FrameHTTPReqHead {}
                 json.Unmarshal(data, frame)
                 leash.handles.onHTTP(band, frame)

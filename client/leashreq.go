@@ -1,7 +1,7 @@
 package client
 
 import (
-        "log"
+        "github.com/hlhv/scribe"
         "github.com/hlhv/protocol"
 )
 
@@ -39,7 +39,7 @@ func (leash *Leash) addQueue (req Req) {
  * thread safe.
  */
 func (leash *Leash) Mount (host string, path string) (err error) {
-        log.Println("mounting on", host, path)
+        scribe.PrintProgress(scribe.LogLevelNormal, "mounting on", host, path)
         promise := make(chan error)
         leash.addQueue (&ReqMount {
                 promise: promise,
@@ -53,7 +53,8 @@ func (leash *Leash) Mount (host string, path string) (err error) {
  * is thread safe.
  */
 func (leash *Leash) Unmount (host string, path string) (err error) {
-        log.Println("unmounting from", host, path)
+        scribe.PrintProgress (
+                scribe.LogLevelNormal, "unmounting from", host, path)
         promise := make(chan error)
         leash.addQueue (&ReqUnmount {
                 promise: promise,
@@ -66,11 +67,12 @@ func (leash *Leash) Unmount (host string, path string) (err error) {
 func (leash *Leash) respond () {
         for {
                 req := <- leash.queue
-                log.Println("got internal request")
+                scribe.PrintRequest (
+                        scribe.LogLevelDebug, "got internal request")
                 if req == nil { break }
                 leash.respondOnce(req)
         }
-        log.Println("will no longer respond")
+        scribe.PrintWarning(scribe.LogLevelDebug, "will no longer respond")
 }
 
 func (leash *Leash) respondOnce (req Req) {

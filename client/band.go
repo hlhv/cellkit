@@ -2,13 +2,13 @@ package client
 
 import (
         "io"
-        "log"
         "net"
         "fmt"
         "errors"
         "crypto/tls"
         "encoding/json"
         "github.com/hlhv/fsock"
+        "github.com/hlhv/scribe"
         "github.com/hlhv/protocol"
 )
 
@@ -30,23 +30,23 @@ func spawnBand (
         band *Band,
         err error,
 ) {
-        log.Println("connecting new band")
+        scribe.PrintProgress(scribe.LogLevelDebug, "connecting new band")
 
-        log.Println("dialing")
+        scribe.PrintProgress(scribe.LogLevelDebug, "dialing")
         conn, err := tls.Dial("tcp", address, tlsConf)
         if err != nil { conn.Close(); return nil, err }
 
         reader := fsock.NewReader(conn)
         writer := fsock.NewWriter(conn)
 
-        log.Println("requesting band status")
+        scribe.PrintProgress(scribe.LogLevelDebug, "requesting band status")
         _, err = protocol.WriteMarshalFrame (writer, &protocol.FrameIAm {
                 ConnKind: protocol.ConnKindBand,
                 Uuid:     uuid,
         })
         if err != nil { conn.Close(); return nil, err }
 
-        log.Println("sending key")
+        scribe.PrintProgress(scribe.LogLevelDebug, "sending key")
         _, err = protocol.WriteMarshalFrame (writer, &protocol.FrameKey {
                 Key: key,
         })
@@ -63,7 +63,7 @@ func spawnBand (
         frame := protocol.FrameAccept {}
         err = json.Unmarshal(data, &frame)
         if err != nil { conn.Close(); return nil, err }
-        log.Println("accepted")
+        scribe.PrintDone(scribe.LogLevelDebug, "band accepted")
 
         band = &Band {
                 conn:     conn,
@@ -81,23 +81,29 @@ func (band *Band) listen () {
         for {
                 kind, data, err := protocol.ReadParseFrame(band.reader)
                 if err == io.EOF { break }
-                if err != nil { log.Println("band error:", err) }
+                if err != nil {
+                        scribe.PrintError (
+                                scribe.LogLevelError, "band error:", err)
+                        }
                 if band.callback == nil {
-                        log.Println("BAND CALLBACK NOT REGISTERED")
+                        scribe.PrintError (
+                                scribe.LogLevelError,
+                                "band callback not registered")
                 } else {
                         band.callback(band, kind, data)
                 }
         }
-        log.Println("band disconnected")
+        scribe.PrintDisconnect(scribe.LogLevelDebug, "band disconnected")
 }
 
 /* Close closes the connection and marks the band as closed so that it can be
  * removed from the list later.
  */
 func (band *Band) Close () {
-        log.Println("closing band")
+        scribe.PrintProgress(scribe.LogLevelDebug, "closing band")
         band.open = false
         band.conn.Close()
+        scribe.PrintDone(scribe.LogLevelDebug, "band closed")
 }
 
 /* ReadParseFrame reads a single frame and parses it, separating the kind and
