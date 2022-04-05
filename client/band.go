@@ -85,6 +85,7 @@ func (band *Band) listen () {
                         scribe.PrintError (
                                 scribe.LogLevelError, "band error:", err)
                         }
+                        break
                 if band.callback == nil {
                         scribe.PrintError (
                                 scribe.LogLevelError,
