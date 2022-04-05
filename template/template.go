@@ -76,3 +76,10 @@ func (template *Template) Eval (inputs map[string] string) (output string) {
 
         return
 }
+
+/* ByteEval wraps Eval, but returns a []byte instead of a string which can be
+ * more useful for writing a response body.
+ */
+func (template *Template) ByteEval (inputs map[string] string) (output []byte) {
+        return []byte(template.Eval(inputs))
+}
