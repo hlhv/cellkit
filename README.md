@@ -15,14 +15,22 @@ package main
 
 import (
         "github.com/hlhv/protocol"
+        "github.com/hlhv/cellkit/frame"
         "github.com/hlhv/cellkit/client"
 )
 
 func main () {
-        // create leash
-        leash := client.NewLeash()
-        leash.OnHTTP(onHTTP)
+        // 
+        frame.Be (&frame.Conf {
+                Description: "Test cell",
+                Run:         run,
+        })
+}
 
+// main cell function
+func run (leash *client.Leash) {
+        leash.OnHTTP(onHTTP)
+        
         // connect to server
         leash.Ensure (
                 "localhost:2001",
@@ -32,6 +40,7 @@ func main () {
                 []client.Mount {
                         { "@", "/" },
                 },
+                "something",
                 "",
         )
 }
