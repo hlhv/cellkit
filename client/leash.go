@@ -169,11 +169,6 @@ func (leash *Leash) Dial (
         // hangs?
         _, err = leash.writeMarshalFrame (&protocol.FrameIAm {
                 ConnKind: protocol.ConnKindCell,
-        })
-        if err != nil { return err }
-
-        scribe.PrintProgress(scribe.LogLevelDebug, "sending key")
-        _, err = leash.writeMarshalFrame (&protocol.FrameKey {
                 Key: key,
         })
         if err != nil { return err }
@@ -300,10 +295,12 @@ func (leash *Leash) handleBandFrame (
 ) {
         switch kind {
         case protocol.FrameKindHTTPReqHead:
-                scribe.PrintRequest (
-                        scribe.LogLevelNormal, "incoming http request")
                 frame := &protocol.FrameHTTPReqHead {}
                 json.Unmarshal(data, frame)
+                scribe.PrintRequest (
+                        scribe.LogLevelNormal,
+                        "request for \"" + frame.Host + frame.Path + "\"",
+                        "by", frame.RemoteAddr)
                 leash.handles.onHTTP(band, frame)
                 band.writeHTTPEnd()
                 break

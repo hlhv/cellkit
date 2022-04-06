@@ -88,10 +88,7 @@ func (leash *Leash) respondOnce (req Req) {
                 
         case ReqKindUnmount:
                 reqSure := req.(*ReqUnmount)
-                _, err := leash.writeMarshalFrame (&protocol.FrameUnmount {
-                        Host: reqSure.Host,
-                        Path: reqSure.Path,
-                })
+                _, err := leash.writeMarshalFrame(&protocol.FrameUnmount{})
                 reqSure.promise <- err
                 break
         }

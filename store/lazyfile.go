@@ -73,7 +73,11 @@ func (item *LazyFile) loadAndSend (
                 chunk := make([]byte, chunkSize)
                 bytesRead, err := io.ReadFull(file, chunk)
                 chunk = chunk[:bytesRead]
-		if err != nil && err != io.ErrUnexpectedEOF { return err }
+
+                fileEnded := err == io.ErrUnexpectedEOF || err == io.EOF
+		if err != nil && !fileEnded {
+                        return err
+                }
 
                 if needMime {
                         needMime = false
@@ -87,7 +91,7 @@ func (item *LazyFile) loadAndSend (
                 item.chunks = append(item.chunks, chunk)
                 band.WriteHTTPBody(chunk)
 		
-                if err == io.ErrUnexpectedEOF { break }
+                if fileEnded { break }
         }
         
         return nil

@@ -43,14 +43,9 @@ func spawnBand (
         _, err = protocol.WriteMarshalFrame (writer, &protocol.FrameIAm {
                 ConnKind: protocol.ConnKindBand,
                 Uuid:     uuid,
+                Key:      key,
         })
         if err != nil { conn.Close(); return nil, err }
-
-        scribe.PrintProgress(scribe.LogLevelDebug, "sending key")
-        _, err = protocol.WriteMarshalFrame (writer, &protocol.FrameKey {
-                Key: key,
-        })
-        if err != nil { return nil, err }
 
         kind, data, err := protocol.ReadParseFrame(reader)
         if err != nil { conn.Close(); return nil, err }
