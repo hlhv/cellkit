@@ -12,13 +12,19 @@ import (
  */
 type Store struct {
         items map[string] *LazyFile
+        root  string
 }
 
 /* New creates a new Store.
  */
-func New () (store *Store) {
+func New (root string) (store *Store) {
+        lastIndex := len(root) - 1
+        if root[lastIndex] == '/' {
+                root = root[:lastIndex]
+        }
         return &Store {
                 items: make(map[string] *LazyFile),
+                root:  root,
         }
 }
 
@@ -26,6 +32,7 @@ func New () (store *Store) {
  * Url paths must start from /, and not end in /.
  */
 func (store *Store) Register (filePath string, webPath string) (err error) {
+        filePath = store.root + filePath
         if webPath[0] != '/' {
                 return errors.New("web path must start at /")
         }
