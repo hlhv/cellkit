@@ -6,7 +6,6 @@ import (
         "strings"
         "net/http"
         "path/filepath"
-        "github.com/hlhv/scribe"
         "github.com/hlhv/protocol"
         "github.com/hlhv/cellkit/client"
 )
@@ -65,9 +64,6 @@ func (item *LazyFile) loadAndSend (
 ) (
         err error,
 ) {
-        scribe.PrintProgress (
-                scribe.LogLevelDebug, "caching file", item.FilePath)
-        
         file, err := os.Open(item.FilePath)
         defer file.Close()
         if err != nil { return err }
@@ -98,8 +94,6 @@ func (item *LazyFile) loadAndSend (
 		
                 if fileEnded { break }
         }
-        
-        scribe.PrintDone(scribe.LogLevelDebug, "cached")
         
         return nil
 }

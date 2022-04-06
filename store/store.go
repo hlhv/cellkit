@@ -2,7 +2,6 @@ package store
 
 import (
         "errors"
-        "github.com/hlhv/scribe"
         "github.com/hlhv/protocol"
         "github.com/hlhv/cellkit/client"
 )
@@ -34,8 +33,6 @@ func New (root string) (store *Store) {
  */
 func (store *Store) Register (filePath string, webPath string) (err error) {
         filePath = store.root + filePath
-        scribe.PrintInfo (
-                scribe.LogLevelDebug, "using file", webPath, "->", filePath)
         if webPath[0] != '/' {
                 return errors.New("web path must start at /")
         }
