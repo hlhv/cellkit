@@ -98,18 +98,36 @@ func (item *LazyFile) loadAndSend (
         return nil
 }
 
+/* for rare cases when plain text files have a mime type that doesn't fall under
+ * "text/"
+ */
+var mimeDict = map[string] string {
+        ".svg": "image/svg+xml",
+}
+
 /* mimeSniff determines the content type of a byte array and an associated name.
  * This isn't very good as of now but it works!
  */
 func mimeSniff (name string, data []byte) (mime string) {
         extension := filepath.Ext(name)
         mime = http.DetectContentType(data)
-        if (
-                strings.HasPrefix(mime, "text/plain") &&
-                extension != ".txt" &&
-                extension != "" ) {
-                
-                mime = strings.Replace(mime, "plain", extension[1:], 1)
+
+        // go's mime type sniffer will return text/plain when it sees plain
+        // text, and we only want that if the file is actually a text file.
+        wrongType := strings.HasPrefix(mime, "text/plain") &&
+                     extension != ".txt" &&
+                     extension != ""
+
+        if (wrongType) {
+                // check for cases where the file is detected as text but does
+                // not have a mime type that falls under "text/"
+                switch extension {
+                        case ".svg": return "image/svg+xml"
+                        
+                        // normal case
+                        default:
+                        return strings.Replace(mime, "plain", extension[1:], 1)
+                }
         }
         return mime
 }
