@@ -20,7 +20,7 @@ import (
 )
 
 func main () {
-        // 
+        // configure framework
         frame.Be (&frame.Conf {
                 Description: "Test cell",
                 Run:         run,
@@ -37,9 +37,7 @@ func run (leash *client.Leash) {
 
                 // mount on the root. @ refers to the default hostname, which
                 // localhost is aliased to by default.
-                []client.Mount {
-                        { "@", "/" },
-                },
+                client.Mount { "@", "/" },
                 "something",
                 "",
         )
