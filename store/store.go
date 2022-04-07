@@ -72,3 +72,10 @@ func (store *Store) TryHandle (
         err = item.Send(band, head)
         return true, err
 }
+
+/* Returns the root path of the store. This can be helpful for doing things such
+ * as registering an entier directory.
+ */
+func (store *Store) GetRoot () (root string) {
+        return store.root
+}
