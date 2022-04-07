@@ -68,14 +68,14 @@ func NewLeash () (leash *Leash) {
  */
 func (leash *Leash) Ensure (
         address      string,
-        mounts       []Mount,
+        mount        Mount,
         key          string,
         rootCertPath string,
 ) {
         var retryTime time.Duration = 3
         for {
                 worked, err := leash.ensureOnce (
-                        address, mounts,
+                        address, mount,
                         key, rootCertPath)
                 if err != nil {
                         scribe.PrintError (
@@ -96,7 +96,7 @@ func (leash *Leash) Ensure (
 
 func (leash *Leash) ensureOnce (
         address      string,
-        mounts       []Mount,
+        mount        Mount,
         key          string,
         rootCertPath string,
 ) (
@@ -106,10 +106,9 @@ func (leash *Leash) ensureOnce (
         err = leash.Dial(address, key, rootCertPath)
         if err != nil { return false, err }
 
-        for _, mount := range(mounts) {
-                err = leash.Mount(mount.Host, mount.Path)
-                if err != nil { return true, err }
-        }
+        err = leash.Mount(mount.Host, mount.Path)
+        if err != nil { return true, err }
+
         scribe.PrintDone(scribe.LogLevelNormal, "mounted")
 
         return true, leash.Listen()
