@@ -2,6 +2,7 @@ package store
 
 import (
         "errors"
+        "io/ioutil"
         "github.com/hlhv/protocol"
         "github.com/hlhv/cellkit/client"
 )
@@ -32,14 +33,49 @@ func New (root string) (store *Store) {
  * Url paths must start from /, and not end in /.
  */
 func (store *Store) Register (filePath string, webPath string) (err error) {
+        if filePath[0] != '/' {
+                return errors.New("file path must start at /")
+        }
+        
         filePath = store.root + filePath
+        
         if webPath[0] != '/' {
                 return errors.New("web path must start at /")
         }
+        
         if webPath[len(webPath) - 1] == '/' {
                 return errors.New("web path must be a file, not a directory")
         }
+        
         store.items[webPath] = &LazyFile { FilePath: filePath }
+        return nil
+}
+
+/* RegisterDir registers every file in a given directory.
+ */
+func (store *Store) RegisterDir (dirPath string, webPath string) (err error) {
+        if dirPath[0] != '/' {
+                return errors.New("dir path must start at /")
+        }
+        
+        dirPath = store.root + dirPath
+        
+        if webPath[0] != '/' {
+                return errors.New("web path must start at /")
+        }
+        
+        if dirPath[len(dirPath) - 1] != '/' { dirPath += "/" }
+        if webPath[len(webPath) - 1] != '/' { webPath += "/" }
+        
+        directory, err := ioutil.ReadDir(dirPath)
+        if err != nil { return err }
+
+        for _, file := range(directory) {
+                if file.IsDir() { continue }
+                store.items[webPath + file.Name()] = &LazyFile {
+                        FilePath: dirPath + file.Name(),
+                }
+        }
         return nil
 }
 
@@ -74,7 +110,8 @@ func (store *Store) TryHandle (
 }
 
 /* Returns the root path of the store. This can be helpful for doing things such
- * as registering an entier directory.
+ * as registering an entire directory while doing operations on the files inside
+ * of it.
  */
 func (store *Store) GetRoot () (root string) {
         return store.root
