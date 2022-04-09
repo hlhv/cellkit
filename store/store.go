@@ -43,10 +43,6 @@ func (store *Store) Register (filePath string, webPath string) (err error) {
                 return errors.New("web path must start at /")
         }
         
-        if webPath[len(webPath) - 1] == '/' {
-                return errors.New("web path must be a file, not a directory")
-        }
-        
         store.items[webPath] = &LazyFile { FilePath: filePath }
         return nil
 }
