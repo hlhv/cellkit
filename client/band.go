@@ -162,27 +162,46 @@ func (band *Band) writeHTTPEnd () (nn int, err error) {
         )
 }
 
+/* AskForHTTPBody requests the http body data from the queen. The queen will
+ * return at maximum the amount of data specified with maxSize.
+ */
+func (band *Band) AskForHTTPBody (maxSize int) (nn int, err error) {
+        return band.WriteMarshalFrame (&protocol.FrameHTTPResWant {
+                MaxSize: maxSize,
+        })
+}
+
 /* ReadHTTPBody reads a chunk of the request body. This function returns true
  * for getNext if the chunk was successfully read, and false if it encountered
  * an error or the request ended.
  */
 func (band *Band) ReadHTTPBody () (getNext bool, data []byte, err error) {
         getNext = false
-        var kind protocol.FrameKind
-        kind, data, err = band.ReadParseFrame()
-        if err != nil { return }
-        switch kind {
-        case protocol.FrameKindHTTPReqBody:
-                getNext = true
-                break
-        case protocol.FrameKindHTTPReqEnd:
-                data = nil
-                break
-        default:
-                err = errors.New (fmt.Sprint (
-                        "got unexpected kind code while processing http req:",
-                        kind,
-                ))
+        
+        kind, data, err := band.ReadParseFrame()
+        if err != nil { return false, nil, err }
+
+        if kind == protocol.FrameKindHTTPReqBody {
+                return true, data, nil
+        } else if kind == protocol.FrameKindHTTPReqEnd {
+                return false, data, nil
         }
-        return
+        
+        return false, data, errors.New (fmt.Sprint (
+                "got unexpected kind code while processing http req:",
+                kind,
+        ))
+}
+
+/* ReadHTTPBodyFull reads all chunks of the request body, and returns the data
+ * read as []byte.
+ */
+func (band *Band) ReadHTTPBodyFull () (body []byte, err error) {
+        for {
+                getNext, data, err := band.ReadHTTPBody()
+                if err != nil { return data, err }
+                body = append(body, data...)
+                if !getNext { break }
+        }
+        return body, nil
 }
