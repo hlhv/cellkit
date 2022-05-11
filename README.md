@@ -1,5 +1,12 @@
 # cellkit
 
+---
+
+!!! This repository is no longer in development. For the new cell module, visit
+[this repository](https://github.com/hlhv/cell) !!!
+
+---
+
 Cellkit is a module that facilitates the creation of HLHV cells. In the future,
 this module will contain many convenience functions to make creating a cell
 easier.
